@@ -50,21 +50,41 @@ def mydistance(pos_1,pos_2):
 
     return dist
 
+def nanarccos (floatfraction):
+    con1 = ~np.isnan(floatfraction)
+    
+    if con1:
+        cos = np.arccos(floatfraction)
+        OPdeg = np.degrees(cos)
+    
+    else:
+        OPdeg = np.nan
+    
+    return (OPdeg)
+
+        
+def vecnanarccos():
+    
+    A = np.frompyfunc(nanarccos, 1, 1)
+    
+    return A
+    
+ 
 def lawofcosines(line_1,line_2,line_3):
     '''
     Takes 3 series, and finds the angle made by line 1 and 2 using the law of cosine
     '''
+ 
     num = line_1**2 + line_2**2 - line_3**2
     denom = (line_1*line_2)*2
     floatnum = num.astype(float)
     floatdenom = denom.astype(float)
     floatfraction = floatnum/floatdenom
-    cos = np.arccos(floatfraction)
-    OPdeg = np.degrees(cos)
-
+    OPdeg = vecnanarccos()(floatfraction)
+    
     return OPdeg
 
-def midpointx (pos_1, pos_2, pos_3, pos_4):
+def midpoint (pos_1, pos_2, pos_3, pos_4):
     '''
     give definition pos_1: x-value object 1, pos_2: y-value object 1, pos_3: x-value object 2
     pos_4: y-value object 2
@@ -93,14 +113,13 @@ def gaze_tracking(fish1,fish2):
     """
 
     ## Get the midpoint of the gazing fish. 
-    midx,midy = midpointx(fish1['B_rightoperculum']['x'], fish1['B_rightoperculum']['y'], fish1['E_leftoperculum']['y'], fish1['E_leftoperculum']['y'] )
+    midx,midy = midpoint(fish1['B_rightoperculum']['x'], fish1['B_rightoperculum']['y'], fish1['E_leftoperculum']['x'], fish1['E_leftoperculum']['y'] )
     line1 = mydistance((midx, midy), (fish1['A_head']['x'], fish1['A_head']['y']))
     line2 = mydistance((fish1['A_head']['x'], fish1['A_head']['y']), (fish2['A_head']['x'], fish2['A_head']['y']))
     line3 = mydistance((fish2['A_head']['x'], fish2['A_head']['y']), (midx, midy))
 
-    String = lawofcosines(line1, line2, line3)
-    return String
-
+    angle = lawofcosines(line1, line2, line3)
+    return angle
 
 def gaze_ethoplot(anglearrays,title,show = True,save = False):
     """
@@ -120,7 +139,7 @@ def gaze_ethoplot(anglearrays,title,show = True,save = False):
         inds = np.arange(len(anglearray))
         color = colors[i]
         ax[0].plot(anglearray,color = color,linewidth = 1,alpha = 0.5,label = labels[i])
-        boolean = anglearray.apply(lambda x: 1 if x > 170 else 0) 
+        boolean = anglearray.apply(lambda x: 1 if x > 140 else 0) 
         [ax[1].axvline(x = j,alpha = 0.2,color = color) for j in inds if boolean[j] == 1]
 
     ax[0].set_ylabel('relative angle (degrees)')
@@ -129,8 +148,61 @@ def gaze_ethoplot(anglearrays,title,show = True,save = False):
     ax[0].set_title(title)
 
     ax[0].legend(loc = 1)## in the upper right; faster than best. 
+
+    if save == True:
+        plt.savefig(title + '.png')
+        
     if show == True:
         plt.show()
+
+def binarize(anglearrays):
+    booleans = []
+    for i in range(2):
+        anglearray = anglearrays[i]
+        inds = np.arange(len(anglearray))
+        boolean = anglearray.apply(lambda x: 1 if x > 140 else 0).values
+        boolean = binary_dilation(boolean, structure = np.ones(40,))
+        booleans.append(boolean)
+    
+    product = booleans[0] * booleans[1]
+    result = np.where(product)
+    
+    return (result)
+
+def auto_scoring_tracefilter(data,p0=20,p1=250,p2=15,p3=70,p4=200):
+    mydata = data.copy()
+    boi = ['A_head','B_rightoperculum', 'C_tailbase', 'D_tailtip','E_leftoperculum']
+    for b in boi:
+        for j in ['x','y']:
+            xdifference = abs(mydata[b][j].diff())
+            xdiff_check = xdifference > p0     
+            mydata[b][j][xdiff_check] = np.nan
+ 
+            origin_check = mydata[b][j] < p2
+            mydata[origin_check] = np.nan
+
+    return mydata
+    
+def manual_scoring(data_manual,data_auto,crop0 = 0,crop1= -1):
+    '''
+    A function that takes manually scored data and converts it to a binary array. 
+    
+    Parameters: 
+    data_manual: manual scored data, read in from an excel file
+    data_auto: automatically scored data, just used to establish how long the session is. 
+    
+    Returns: 
+    pandas array: binary array of open/closed scoring
+    '''
+    Manual = pd.DataFrame(0, index=np.arange(len(data_auto)), columns = ['OpOpen'])
+    reference = data_manual.index
+
+    
+    for i in reference:
+        Manual[data_manual['Start'][i]:data_manual['Stop'][i]] = 1
+          
+    return Manual['OpOpen'][crop0:crop1]
+
 
 ####################################
 
@@ -183,37 +255,127 @@ if __name__ == "__main__":
     # In[4]:
 
 
-    h5_dir = '.'#'/Users/Claire/Desktop/Test'
-    h5_files = glob(os.path.join(h5_dir,'*.h5'))
+    home_dir = '.'#'/Users/Claire/Desktop/Test'
+    h5_files = glob(os.path.join(home_dir,'*.h5'))
     print(h5_files)
 
-
+    excel_files = glob(os.path.join(home_dir, '*.xlsx'))
+    print(excel_files)
+    
     # In[6]:
 
-    file_handle1 = h5_files[1]
+    file_handle1 = h5_files[0]
 
     with pd.HDFStore(file_handle1,'r') as help1:
         data_auto1 = help1.get('df_with_missing')
         data_auto1.columns= data_auto1.columns.droplevel()
+        data_auto1_filt = auto_scoring_tracefilter (data_auto1)
+     
 
-    file_handle2 = h5_files[0]
+        
+    file_handle2 = h5_files[1]
 
     with pd.HDFStore(file_handle2,'r') as help2:
         data_auto2 = help2.get('df_with_missing')
         data_auto2.columns= data_auto2.columns.droplevel()
+        data_auto2_filt = auto_scoring_tracefilter(data_auto2)
+        data_auto2_filt['A_head']['x'] = data_auto2_filt['A_head']['x'] + 500
+        data_auto2_filt['B_rightoperculum']['x'] = data_auto2_filt['B_rightoperculum']['x'] + 500
+        data_auto2_filt['E_leftoperculum']['x'] = data_auto2_filt['E_leftoperculum']['x'] + 500
+    
+    file_handle3 = excel_files[0]
+    data_manual1 = pd.read_excel(file_handle3)
+   
+    file_handle4 = excel_files[1]
+    data_manual2 = pd.read_excel(file_handle4)
+    
+    angle1 = gaze_tracking(data_auto1_filt,data_auto2_filt)
+    angle2 = gaze_tracking(data_auto2_filt,data_auto1_filt)
 
 
-    angle1 = gaze_tracking(data_auto1,data_auto2)
-    angle2 = gaze_tracking(data_auto2,data_auto1)
+  
+#    Fish1aut = angle1.apply(lambda x: 1 if x > 140 else 0).values
+#    Fish1man = manual_scoring(data_manual1, data_auto1[88150:88910])
+#    Fish2aut = angle2.apply(lambda x: 1 if x > 140 else 0).values
+#    Fish2man = manual_scoring(data_manual2, data_auto2[88150:88910])
+#
+    def HeatmapCompare (filename, angle, data_manual, start, stop):
+        Fish1man = manual_scoring(data_manual, angle[start:stop])
+        Fish1aut = angle.apply(lambda x: 1 if x > 140 else 0).values
+        Compare = pd.DataFrame(0, index=np.arange(len(Fish1man)), columns = ['Manual', 'Automatic'])
+        Compare['Manual'] = Fish1man
+        Compare['Automatic'] = Fish1aut[start:(stop - 1)]
+        ax = sns.heatmap(Compare)
+        plt.savefig('heatmapcompare' + str(filename) + '.png')
+    
+    def DualAngleHeatMapCompare (filename, angle1, angle2, data_manual1, data_manual2, start, stop):
+        Fish1man = manual_scoring(data_manual1, angle1[start:stop])
+        Fish1aut = angle1.apply(lambda x: 1 if x > 140 else 0).values
+        Fish2aut = angle2.apply(lambda x: 1 if x > 140 else 0).values
+        Fish2man = manual_scoring(data_manual2, data_auto2[start:stop])
+        Compare = pd.DataFrame(0, index=np.arange(len(Fish1man)), columns = ['Manual', 'Automatic'])
+        Compare['Manual'] = Fish1man + Fish2man
+        Compare['Automatic'] = Fish1aut[start:(stop - 1)] + Fish2aut[start:(stop - 1)]
+        ax = sns.heatmap(Compare)
+        plt.savefig('dualheatmapcompare' + str(filename) + '.png')
+        
+        
+        
+#    HeatmapCompare('angle1IM1_IM2', angle1, data_manual1, 88150, 88910)
+#    HeatmapCompare('angle2IM1_IM2', angle2, data_manual2, 88150, 88910)
+#    DualAngleHeatMapCompare('daulangleIM1_IM2', angle1, angle2, data_manual1, data_manual2, 88150, 88910)
+        
 
-    gaze_ethoplot([angle1,angle2],'test',show = True)
+    ##Making joint kdeplots to assess dual orientation of continuous angles
+    
+#    list1 = [77525, 87525, 97525, 107525, 117525, 127525, 137525, 147525, 157525]
+#    counter = 0
+#    for i in list1:
+#        x1 = pd.Series(angle1[list1[counter]:list1[counter + 1]], name="$X_1$")
+#        x2 = pd.Series(angle2[list1[counter]:list1[counter + 1]], name="$X_2$")
+#        g = sns.jointplot(x1, x2, kind="kde", height=7, space=0)
+#        plt.savefig('jointkdeplot' + str(counter) + '.pdf')
+#        counter = counter + 1
+#        
+     
+    
+    def auto_scoring_get_opdeg(data_auto):
+        '''
+        Function to automatically score operculum as open or closed based on threshold parameters. 
+        
+        Parameters: 
+        data_auto: traces of behavior collected as a pandas array. 
+        thresh_param0: lower threshold for operculum angle
+        thresh_param1: upper threshold for operculum angle
+        
+        Returns:
+        pandas array: binary array of open/closed scoring
+        '''
+        # First collect all parts of interest:
+        poi = ['A_head','B_rightoperculum','E_leftoperculum']
+        HROP = mydistance(coords(data_auto[poi[0]]),coords(data_auto[poi[1]]))
+        HLOP = mydistance(coords(data_auto[poi[0]]),coords(data_auto[poi[2]]))
+        RLOP = mydistance(coords(data_auto[poi[1]]),coords(data_auto[poi[2]]))
+        
+        Operangle = lawofcosines(HROP,HLOP,RLOP)
+        
+        return Operangle
 
-
-    ### Plot points where this fish is looking at the other: 
-    #print(len(StraightString))
-    #look_inds = np.arange(len(StraightString))
-    #print(look_inds)
-    #[plt.axvline(x = i, alpha =0.2,color="red") for i in look_inds if StraightString[i] == 1]
-    #plt.axvline(x = 89514,color = 'black')
-    #plt.show()
+    Operangle1 = auto_scoring_get_opdeg(data_auto1_filt)
+    Operangle2 = auto_scoring_get_opdeg(data_auto2_filt)
+    
+#    if i in angle1 > 180:
+#        print "jey"
+    
+    # conditional, new array, kdeplot of new array
+    # integral, of probability 
+    
+    
+    
+    #gaze_ethoplot([angle1,angle2],'test',show = True, save = False)
+    #print (binarize([angle1,angle2]))
+    
+#87525:154600
+  
+    
 
