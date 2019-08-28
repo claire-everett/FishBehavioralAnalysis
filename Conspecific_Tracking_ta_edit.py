@@ -248,7 +248,48 @@ def manual_scoring(data_manual,data_auto,crop0 = 0,crop1= -1):
     # In[53]:
 
 
-    #plt.plot(String)
+## Functions added by Claire 8/28
+def HeatmapCompare (filename, angle, data_manual, start, stop):
+    Fish1man = manual_scoring(data_manual, angle[start:stop])
+    Fish1aut = angle.apply(lambda x: 1 if x > 140 else 0).values
+    Compare = pd.DataFrame(0, index=np.arange(len(Fish1man)), columns = ['Manual', 'Automatic'])
+    Compare['Manual'] = Fish1man
+    Compare['Automatic'] = Fish1aut[start:(stop - 1)]
+    ax = sns.heatmap(Compare)
+    plt.savefig('heatmapcompare' + str(filename) + '.png')
+
+def DualAngleHeatMapCompare (filename, angle1, angle2, data_manual1, data_manual2, start, stop):
+    Fish1man = manual_scoring(data_manual1, angle1[start:stop])
+    Fish1aut = angle1.apply(lambda x: 1 if x > 140 else 0).values
+    Fish2aut = angle2.apply(lambda x: 1 if x > 140 else 0).values
+    Fish2man = manual_scoring(data_manual2, data_auto2[start:stop])
+    Compare = pd.DataFrame(0, index=np.arange(len(Fish1man)), columns = ['Manual', 'Automatic'])
+    Compare['Manual'] = Fish1man + Fish2man
+    Compare['Automatic'] = Fish1aut[start:(stop - 1)] + Fish2aut[start:(stop - 1)]
+    ax = sns.heatmap(Compare)
+    plt.savefig('dualheatmapcompare' + str(filename) + '.png')
+
+def auto_scoring_get_opdeg(data_auto):
+    '''
+    Function to automatically score operculum as open or closed based on threshold parameters. 
+    
+    Parameters: 
+    data_auto: traces of behavior collected as a pandas array. 
+    thresh_param0: lower threshold for operculum angle
+    thresh_param1: upper threshold for operculum angle
+    
+    Returns:
+    pandas array: binary array of open/closed scoring
+    '''
+    # First collect all parts of interest:
+    poi = ['A_head','B_rightoperculum','E_leftoperculum']
+    HROP = mydistance(coords(data_auto[poi[0]]),coords(data_auto[poi[1]]))
+    HLOP = mydistance(coords(data_auto[poi[0]]),coords(data_auto[poi[2]]))
+    RLOP = mydistance(coords(data_auto[poi[1]]),coords(data_auto[poi[2]]))
+    
+    Operangle = lawofcosines(HROP,HLOP,RLOP)
+    
+    return Operangle
 if __name__ == "__main__":
     # ##### Load Data
 
@@ -294,88 +335,9 @@ if __name__ == "__main__":
 
 
   
-#    Fish1aut = angle1.apply(lambda x: 1 if x > 140 else 0).values
-#    Fish1man = manual_scoring(data_manual1, data_auto1[88150:88910])
-#    Fish2aut = angle2.apply(lambda x: 1 if x > 140 else 0).values
-#    Fish2man = manual_scoring(data_manual2, data_auto2[88150:88910])
-#
-    def HeatmapCompare (filename, angle, data_manual, start, stop):
-        Fish1man = manual_scoring(data_manual, angle[start:stop])
-        Fish1aut = angle.apply(lambda x: 1 if x > 140 else 0).values
-        Compare = pd.DataFrame(0, index=np.arange(len(Fish1man)), columns = ['Manual', 'Automatic'])
-        Compare['Manual'] = Fish1man
-        Compare['Automatic'] = Fish1aut[start:(stop - 1)]
-        ax = sns.heatmap(Compare)
-        plt.savefig('heatmapcompare' + str(filename) + '.png')
-    
-    def DualAngleHeatMapCompare (filename, angle1, angle2, data_manual1, data_manual2, start, stop):
-        Fish1man = manual_scoring(data_manual1, angle1[start:stop])
-        Fish1aut = angle1.apply(lambda x: 1 if x > 140 else 0).values
-        Fish2aut = angle2.apply(lambda x: 1 if x > 140 else 0).values
-        Fish2man = manual_scoring(data_manual2, data_auto2[start:stop])
-        Compare = pd.DataFrame(0, index=np.arange(len(Fish1man)), columns = ['Manual', 'Automatic'])
-        Compare['Manual'] = Fish1man + Fish2man
-        Compare['Automatic'] = Fish1aut[start:(stop - 1)] + Fish2aut[start:(stop - 1)]
-        ax = sns.heatmap(Compare)
-        plt.savefig('dualheatmapcompare' + str(filename) + '.png')
-        
-        
-        
-#    HeatmapCompare('angle1IM1_IM2', angle1, data_manual1, 88150, 88910)
-#    HeatmapCompare('angle2IM1_IM2', angle2, data_manual2, 88150, 88910)
-#    DualAngleHeatMapCompare('daulangleIM1_IM2', angle1, angle2, data_manual1, data_manual2, 88150, 88910)
-        
-
-    ##Making joint kdeplots to assess dual orientation of continuous angles
-    
-#    list1 = [77525, 87525, 97525, 107525, 117525, 127525, 137525, 147525, 157525]
-#    counter = 0
-#    for i in list1:
-#        x1 = pd.Series(angle1[list1[counter]:list1[counter + 1]], name="$X_1$")
-#        x2 = pd.Series(angle2[list1[counter]:list1[counter + 1]], name="$X_2$")
-#        g = sns.jointplot(x1, x2, kind="kde", height=7, space=0)
-#        plt.savefig('jointkdeplot' + str(counter) + '.pdf')
-#        counter = counter + 1
-#        
-     
-    
-    def auto_scoring_get_opdeg(data_auto):
-        '''
-        Function to automatically score operculum as open or closed based on threshold parameters. 
-        
-        Parameters: 
-        data_auto: traces of behavior collected as a pandas array. 
-        thresh_param0: lower threshold for operculum angle
-        thresh_param1: upper threshold for operculum angle
-        
-        Returns:
-        pandas array: binary array of open/closed scoring
-        '''
-        # First collect all parts of interest:
-        poi = ['A_head','B_rightoperculum','E_leftoperculum']
-        HROP = mydistance(coords(data_auto[poi[0]]),coords(data_auto[poi[1]]))
-        HLOP = mydistance(coords(data_auto[poi[0]]),coords(data_auto[poi[2]]))
-        RLOP = mydistance(coords(data_auto[poi[1]]),coords(data_auto[poi[2]]))
-        
-        Operangle = lawofcosines(HROP,HLOP,RLOP)
-        
-        return Operangle
 
     Operangle1 = auto_scoring_get_opdeg(data_auto1_filt)
     Operangle2 = auto_scoring_get_opdeg(data_auto2_filt)
     
-#    if i in angle1 > 180:
-#        print "jey"
-    
-    # conditional, new array, kdeplot of new array
-    # integral, of probability 
-    
-    
-    
-    #gaze_ethoplot([angle1,angle2],'test',show = True, save = False)
-    #print (binarize([angle1,angle2]))
-    
-#87525:154600
-  
     
 
