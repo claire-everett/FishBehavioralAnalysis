@@ -290,21 +290,9 @@ def auto_scoring_get_opdeg(data_auto):
     Operangle = lawofcosines(HROP,HLOP,RLOP)
     
     return Operangle
-if __name__ == "__main__":
-    # ##### Load Data
 
-    # In[4]:
-
-
-    home_dir = '.'#'/Users/Claire/Desktop/Test'
-    h5_files = glob(os.path.join(home_dir,'*.h5'))
-    print(h5_files)
-
-    excel_files = glob(os.path.join(home_dir, '*.xlsx'))
-    print(excel_files)
-    
-    # In[6]:
-
+## Package up filtering steps. Just expedient for the moment, revise later
+def getfiltereddata(h5_files):
     file_handle1 = h5_files[0]
 
     with pd.HDFStore(file_handle1,'r') as help1:
@@ -312,8 +300,6 @@ if __name__ == "__main__":
         data_auto1.columns= data_auto1.columns.droplevel()
         data_auto1_filt = auto_scoring_tracefilter (data_auto1)
      
-
-        
     file_handle2 = h5_files[1]
 
     with pd.HDFStore(file_handle2,'r') as help2:
@@ -324,17 +310,42 @@ if __name__ == "__main__":
         data_auto2_filt['B_rightoperculum']['x'] = data_auto2_filt['B_rightoperculum']['x'] + 500
         data_auto2_filt['E_leftoperculum']['x'] = data_auto2_filt['E_leftoperculum']['x'] + 500
     
+    return data_auto1_filt,data_auto2_filt
+
+## Class to handle data manipulation for probabilistic metrics. 
+
+## Analyze the joint distributions of angular metrics. 
+class AngularAnalysis(object):
+    ## Take in two angle sets as binary arrays (must be of the same length)
+    def __init__(angle1,angle2):
+        ## 
+
+
+if __name__ == "__main__":
+    # ##### Load Data
+
+    # In[4]:
+
+
+    home_dir = '.'#'/Users/Claire/Desktop/Test'
+    h5_files = glob(os.path.join(home_dir,'*.h5'))
+    print(h5_files)
+
+    ## Packaged up some of the upload code. 
+    data_auto1_filt,data_auto2_filt = getfiltereddata(h5_files)
+
+    excel_files = glob(os.path.join(home_dir, '*.xlsx'))
+    
+    ## Groundtruth data
     file_handle3 = excel_files[0]
     data_manual1 = pd.read_excel(file_handle3)
    
     file_handle4 = excel_files[1]
     data_manual2 = pd.read_excel(file_handle4)
     
+    ## Take the filtered tracked points, and return orientation, opercula angles. 
     angle1 = gaze_tracking(data_auto1_filt,data_auto2_filt)
     angle2 = gaze_tracking(data_auto2_filt,data_auto1_filt)
-
-
-  
 
     Operangle1 = auto_scoring_get_opdeg(data_auto1_filt)
     Operangle2 = auto_scoring_get_opdeg(data_auto2_filt)
