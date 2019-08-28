@@ -316,16 +316,77 @@ def getfiltereddata(h5_files):
 
 ## Analyze the joint distributions of angular metrics. 
 class AngularAnalysis(object):
-    ## Take in two angle sets as binary arrays (must be of the same length)
-    def __init__(angle1,angle2):
-        ## 
+    ## Take in four angle sets as pandas arrays (must be of the same length). The first two represent angles of the fish w.r.t each other, the second two represent opercula angles of the two fish. 
+    def __init__(self,angle1,angle2,operangle1,operangle2):
+        self.fish1_angle = angle1
+        self.fish2_angle = angle2
+        self.fish1_operangle = operangle1
+        self.fish2_operangle = operangle2
+        ## organize for easy indexing:
+        self.fish1 = [self.fish1_angle,self.fish1_operangle]
+        self.fish2 = [self.fish2_angle,self.fish2_operangle]
+        self.fish = [self.fish1,self.fish2]
+
+    ## we have plotting methods and we have probability methods. Within plotting, we have 1d and 2d methods. 2d are for visualization: 
+
+    def plot_2d_face(self,title,timestart = None,timeend = None,kind = 'hex',save = False):
+        '''
+        Joint desnity of both fish heading direction. 
+        title: (string) the title of the figure. 
+        timestart: (int) the time that we start counting the trace from. 
+        timeend: (int) the time that we stop counting the trace. 
+        kind: (string) the kind argument passed to seaborn jointplot. 
+        save: (bool) whether or not to save the figure 
+        '''
+        plot = sns.jointplot(self.fish1_angle[timestart:timeend],self.fish2_angle[timestart:timeend],kind = kind)
+        if save == True: 
+            plt.savefig(title+'.png')
+        plt.show()
+
+        
+    def plot_2d_att(self,title,fishid,timestart = None,timeend = None,kind = 'hex',save = False):
+        '''
+        Joint density of one fish's heading direction + operculum open width
+        title: (string) the title of the figure. 
+        fishid: (int) the identiity of the fish to focus on, 0 or 1 
+        timestart: (int) the time that we start counting the trace from. 
+        timeend: (int) the time that we stop counting the trace. 
+        kind: (string) the kind argument passed to seaborn jointplot. 
+        save: (bool) whether or not to save the figure 
+        '''
+
+        fishdata = self.fish[fishid]
+        fishangle = fishdata[0]
+        fishoper = fishdata[1]
+        plot = sns.jointplot(fishangle[timestart:timeend],fishoper[timestart:timeend],kind = kind)
+        ## add in black lines on threshold:
+        plot.ax_joint.axhline(y = 65,color = 'black')
+        plot.ax_joint.axhline(y = 140,color = 'black')
+        plot.ax_marg_y.axhline(y = 65,color = 'black')
+        plot.ax_marg_y.axhline(y = 140,color = 'black')
+        plot.set_axis_labels("Heading Angle", "Operculum Degree");
+        if save == True: 
+            plt.savefig(title+'.png')
+        plt.show()
+
+    ## 1d are conditional distributions: 
+    def plot_1d_face()
+
+
+        ### Now make 2d histograms of the two angles against each other, and within each fish make 2d histograms of the angle vs. the operculum angle.
+        #print('building histograms...')
+        #self.hist_comp,_,_ = np.histogram2d(self.fish1_angle,self.fish2_angle,bins = np.arange(180),density = True)
+        #self.hist_1,_,_ = np.histogram2d(self.fish1_angle,self.fish1_operangle,bins = np.arange(180),density = True)
+        #self.hist_2,_,_ = np.histogram2d(self.fish2_angle,self.fish2_operangle,bins = np.arange(180),density = True)
+        #print('histograms constructed.')
+
+
 
 
 if __name__ == "__main__":
     # ##### Load Data
 
     # In[4]:
-
 
     home_dir = '.'#'/Users/Claire/Desktop/Test'
     h5_files = glob(os.path.join(home_dir,'*.h5'))
