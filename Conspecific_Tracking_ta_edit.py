@@ -248,22 +248,51 @@ def manual_scoring(data_manual,data_auto,crop0 = 0,crop1= -1):
     # In[53]:
 
 
-    #plt.plot(String)
-if __name__ == "__main__":
-    # ##### Load Data
+## Functions added by Claire 8/28
+def HeatmapCompare (filename, angle, data_manual, start, stop):
+    Fish1man = manual_scoring(data_manual, angle[start:stop])
+    Fish1aut = angle.apply(lambda x: 1 if x > 140 else 0).values
+    Compare = pd.DataFrame(0, index=np.arange(len(Fish1man)), columns = ['Manual', 'Automatic'])
+    Compare['Manual'] = Fish1man
+    Compare['Automatic'] = Fish1aut[start:(stop - 1)]
+    ax = sns.heatmap(Compare)
+    plt.savefig('heatmapcompare' + str(filename) + '.png')
 
-    # In[4]:
+def DualAngleHeatMapCompare (filename, angle1, angle2, data_manual1, data_manual2, start, stop):
+    Fish1man = manual_scoring(data_manual1, angle1[start:stop])
+    Fish1aut = angle1.apply(lambda x: 1 if x > 140 else 0).values
+    Fish2aut = angle2.apply(lambda x: 1 if x > 140 else 0).values
+    Fish2man = manual_scoring(data_manual2, data_auto2[start:stop])
+    Compare = pd.DataFrame(0, index=np.arange(len(Fish1man)), columns = ['Manual', 'Automatic'])
+    Compare['Manual'] = Fish1man + Fish2man
+    Compare['Automatic'] = Fish1aut[start:(stop - 1)] + Fish2aut[start:(stop - 1)]
+    ax = sns.heatmap(Compare)
+    plt.savefig('dualheatmapcompare' + str(filename) + '.png')
 
-
-    home_dir = '.'#'/Users/Claire/Desktop/Test'
-    h5_files = glob(os.path.join(home_dir,'*.h5'))
-    print(h5_files)
-
-    excel_files = glob(os.path.join(home_dir, '*.xlsx'))
-    print(excel_files)
+def auto_scoring_get_opdeg(data_auto):
+    '''
+    Function to automatically score operculum as open or closed based on threshold parameters. 
     
-    # In[6]:
+    Parameters: 
+    data_auto: traces of behavior collected as a pandas array. 
+    thresh_param0: lower threshold for operculum angle
+    thresh_param1: upper threshold for operculum angle
+    
+    Returns:
+    pandas array: binary array of open/closed scoring
+    '''
+    # First collect all parts of interest:
+    poi = ['A_head','B_rightoperculum','E_leftoperculum']
+    HROP = mydistance(coords(data_auto[poi[0]]),coords(data_auto[poi[1]]))
+    HLOP = mydistance(coords(data_auto[poi[0]]),coords(data_auto[poi[2]]))
+    RLOP = mydistance(coords(data_auto[poi[1]]),coords(data_auto[poi[2]]))
+    
+    Operangle = lawofcosines(HROP,HLOP,RLOP)
+    
+    return Operangle
 
+## Package up filtering steps. Just expedient for the moment, revise later
+def getfiltereddata(h5_files):
     file_handle1 = h5_files[0]
 
     with pd.HDFStore(file_handle1,'r') as help1:
@@ -271,8 +300,6 @@ if __name__ == "__main__":
         data_auto1.columns= data_auto1.columns.droplevel()
         data_auto1_filt = auto_scoring_tracefilter (data_auto1)
      
-
-        
     file_handle2 = h5_files[1]
 
     with pd.HDFStore(file_handle2,'r') as help2:
@@ -283,15 +310,105 @@ if __name__ == "__main__":
         data_auto2_filt['B_rightoperculum']['x'] = data_auto2_filt['B_rightoperculum']['x'] + 500
         data_auto2_filt['E_leftoperculum']['x'] = data_auto2_filt['E_leftoperculum']['x'] + 500
     
+    return data_auto1_filt,data_auto2_filt
+
+## Class to handle data manipulation for probabilistic metrics. 
+
+## Analyze the joint distributions of angular metrics. 
+class AngularAnalysis(object):
+    ## Take in four angle sets as pandas arrays (must be of the same length). The first two represent angles of the fish w.r.t each other, the second two represent opercula angles of the two fish. 
+    def __init__(self,angle1,angle2,operangle1,operangle2):
+        self.fish1_angle = angle1
+        self.fish2_angle = angle2
+        self.fish1_operangle = operangle1
+        self.fish2_operangle = operangle2
+        ## organize for easy indexing:
+        self.fish1 = [self.fish1_angle,self.fish1_operangle]
+        self.fish2 = [self.fish2_angle,self.fish2_operangle]
+        self.fish = [self.fish1,self.fish2]
+
+    ## we have plotting methods and we have probability methods. Within plotting, we have 1d and 2d methods. 2d are for visualization: 
+
+    def plot_2d_face(self,title,timestart = None,timeend = None,kind = 'hex',save = False):
+        '''
+        Joint desnity of both fish heading direction. 
+        title: (string) the title of the figure. 
+        timestart: (int) the time that we start counting the trace from. 
+        timeend: (int) the time that we stop counting the trace. 
+        kind: (string) the kind argument passed to seaborn jointplot. 
+        save: (bool) whether or not to save the figure 
+        '''
+        plot = sns.jointplot(self.fish1_angle[timestart:timeend],self.fish2_angle[timestart:timeend],kind = kind)
+        if save == True: 
+            plt.savefig(title+'.png')
+        plt.show()
+
+        
+    def plot_2d_att(self,title,fishid,timestart = None,timeend = None,kind = 'hex',save = False):
+        '''
+        Joint density of one fish's heading direction + operculum open width
+        title: (string) the title of the figure. 
+        fishid: (int) the identiity of the fish to focus on, 0 or 1 
+        timestart: (int) the time that we start counting the trace from. 
+        timeend: (int) the time that we stop counting the trace. 
+        kind: (string) the kind argument passed to seaborn jointplot. 
+        save: (bool) whether or not to save the figure 
+        '''
+
+        fishdata = self.fish[fishid]
+        fishangle = fishdata[0]
+        fishoper = fishdata[1]
+        plot = sns.jointplot(fishangle[timestart:timeend],fishoper[timestart:timeend],kind = kind)
+        ## add in black lines on threshold:
+        plot.ax_joint.axhline(y = 65,color = 'black')
+        plot.ax_joint.axhline(y = 140,color = 'black')
+        plot.ax_marg_y.axhline(y = 65,color = 'black')
+        plot.ax_marg_y.axhline(y = 140,color = 'black')
+        plot.set_axis_labels("Heading Angle", "Operculum Degree");
+        if save == True: 
+            plt.savefig(title+'.png')
+        plt.show()
+
+    ## 1d are conditional distributions: 
+    #def plot_1d_face()
+
+
+        ### Now make 2d histograms of the two angles against each other, and within each fish make 2d histograms of the angle vs. the operculum angle.
+        #print('building histograms...')
+        #self.hist_comp,_,_ = np.histogram2d(self.fish1_angle,self.fish2_angle,bins = np.arange(180),density = True)
+        #self.hist_1,_,_ = np.histogram2d(self.fish1_angle,self.fish1_operangle,bins = np.arange(180),density = True)
+        #self.hist_2,_,_ = np.histogram2d(self.fish2_angle,self.fish2_operangle,bins = np.arange(180),density = True)
+        #print('histograms constructed.')
+
+
+
+
+if __name__ == "__main__":
+    # ##### Load Data
+
+    # In[4]:
+
+    home_dir = '.'#'/Users/Claire/Desktop/Test'
+    h5_files = glob(os.path.join(home_dir,'*.h5'))
+    print(h5_files)
+
+    ## Packaged up some of the upload code. 
+    data_auto1_filt,data_auto2_filt = getfiltereddata(h5_files)
+
+    excel_files = glob(os.path.join(home_dir, '*.xlsx'))
+    
+    ## Groundtruth data
     file_handle3 = excel_files[0]
     data_manual1 = pd.read_excel(file_handle3)
    
     file_handle4 = excel_files[1]
     data_manual2 = pd.read_excel(file_handle4)
     
+    ## Take the filtered tracked points, and return orientation, opercula angles. 
     angle1 = gaze_tracking(data_auto1_filt,data_auto2_filt)
     angle2 = gaze_tracking(data_auto2_filt,data_auto1_filt)
-
+    Operangle1 = auto_scoring_get_opdeg(data_auto1_filt)
+    Operangle2 = auto_scoring_get_opdeg(data_auto2_filt)
 
   
 #    Fish1aut = angle1.apply(lambda x: 1 if x > 140 else 0).values
@@ -299,28 +416,8 @@ if __name__ == "__main__":
 #    Fish2aut = angle2.apply(lambda x: 1 if x > 140 else 0).values
 #    Fish2man = manual_scoring(data_manual2, data_auto2[88150:88910])
 #
-    def HeatmapCompare (filename, angle, data_manual, start, stop):
-        Fish1man = manual_scoring(data_manual, angle[start:stop])
-        Fish1aut = angle.apply(lambda x: 1 if x > 140 else 0).values
-        Compare = pd.DataFrame(0, index=np.arange(len(Fish1man)), columns = ['Manual', 'Automatic'])
-        Compare['Manual'] = Fish1man
-        Compare['Automatic'] = Fish1aut[start:(stop - 1)]
-        ax = sns.heatmap(Compare)
-        plt.savefig('heatmapcompare' + str(filename) + '.png')
-    
-    def DualAngleHeatMapCompare (filename, angle1, angle2, data_manual1, data_manual2, start, stop):
-        Fish1man = manual_scoring(data_manual1, angle1[start:stop])
-        Fish1aut = angle1.apply(lambda x: 1 if x > 140 else 0).values
-        Fish2aut = angle2.apply(lambda x: 1 if x > 140 else 0).values
-        Fish2man = manual_scoring(data_manual2, data_auto2[start:stop])
-        Compare = pd.DataFrame(0, index=np.arange(len(Fish1man)), columns = ['Manual', 'Automatic'])
-        Compare['Manual'] = Fish1man + Fish2man
-        Compare['Automatic'] = Fish1aut[start:(stop - 1)] + Fish2aut[start:(stop - 1)]
-        ax = sns.heatmap(Compare)
-        plt.savefig('dualheatmapcompare' + str(filename) + '.png')
-        
-        
-        
+ 
+ 
 #    HeatmapCompare('angle1IM1_IM2', angle1, data_manual1, 88150, 88910)
 #    HeatmapCompare('angle2IM1_IM2', angle2, data_manual2, 88150, 88910)
 #    DualAngleHeatMapCompare('daulangleIM1_IM2', angle1, angle2, data_manual1, data_manual2, 88150, 88910)
@@ -337,32 +434,7 @@ if __name__ == "__main__":
 #        plt.savefig('jointkdeplot' + str(counter) + '.pdf')
 #        counter = counter + 1
 ##        
-     
-    
-    def auto_scoring_get_opdeg(data_auto):
-        '''
-        Function to automatically score operculum as open or closed based on threshold parameters. 
-        
-        Parameters: 
-        data_auto: traces of behavior collected as a pandas array. 
-        thresh_param0: lower threshold for operculum angle
-        thresh_param1: upper threshold for operculum angle
-        
-        Returns:
-        pandas array: binary array of open/closed scoring
-        '''
-        # First collect all parts of interest:
-        poi = ['A_head','B_rightoperculum','E_leftoperculum']
-        HROP = mydistance(coords(data_auto[poi[0]]),coords(data_auto[poi[1]]))
-        HLOP = mydistance(coords(data_auto[poi[0]]),coords(data_auto[poi[2]]))
-        RLOP = mydistance(coords(data_auto[poi[1]]),coords(data_auto[poi[2]]))
-        
-        Operangle = lawofcosines(HROP,HLOP,RLOP)
-        
-        return Operangle
-
-    Operangle1 = auto_scoring_get_opdeg(data_auto1_filt)
-    Operangle2 = auto_scoring_get_opdeg(data_auto2_filt)
+  
 
     def orientation(data_auto_arg):
         '''
@@ -393,6 +465,7 @@ if __name__ == "__main__":
     fish1slope = orientation(data_auto1_filt)
     fish2slope = orientation(data_auto2_filt)
     
+
     fish1slope = (180 - fish1slope)
     fish2slope = (180- fish2slope)
     
@@ -440,6 +513,6 @@ if __name__ == "__main__":
     #print (binarize([angle1,angle2]))
     
 #87525:154600
-  
+
     
 
