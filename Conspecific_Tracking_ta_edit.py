@@ -442,6 +442,56 @@ class AngularAnalysis(object):
             plt.savefig(title+'.png')
         plt.show()
 
+    ## 1d are conditional distributions: 
+    def prob_1d_face(self,title,targetfish,condition = None,cutoff=180,timestart = None,timeend = None,save = False):
+        '''
+        Distribution of one heading angle, optionally conditioned on the values of another being in a certain range. 
+        title: (string) the figure title. 
+        targetfish: (int) the indentity marker of the fish to focus on. 
+        condition: (list) a set of two float giving the lower and upper limits for an angle in the non-target fish. 
+        cutoff: float() an 
+        timestart: (int)
+        timeend: (int)
+        save: (int)
+        '''
+        ## First do some data manipulation:
+        condfish = abs(1-targetfish)
+        targangle = self.fish[targetfish][0]
+        condangle = self.fish[condfish][0]
+        ## Truncate to a particular range of times: 
+        targcrop,condcrop = targangle[timestart:timeend],condangle[timestart:timeend]
+        ## Get indices after applying condition in the other fish: 
+        condinds = condcrop.index[condcrop.between(*condition)]
+        ## Collect relevant data points in target fish: 
+        vals = targcrop.loc[condinds]
+        ## Calculate the proportion of the data below a cutoff value: 
+        prob = len(vals.index[vals>cutoff])/len(vals)
+        return prob
+
+    def prob_1d_att(self,title,targetfish,condition = None,cutoff=180,timestart = None,timeend = None,save = False):
+        '''
+        Distribution of one heading angle, optionally conditioned on the values of another being in a certain range. 
+        title: (string) the figure title. 
+        targetfish: (int) the indentity marker of the fish to focus on. 
+        condition: (list) a set of two float giving the lower and upper limits for an angle in the non-target fish. 
+        cutoff: float() an 
+        timestart: (int)
+        timeend: (int)
+        save: (int)
+        '''
+        ## First do some data manipulation:
+        targangle = self.fish[targetfish][0]
+        targoper = self.fish[targetfish][1]
+        ## Truncate to a particular range of times: 
+        anglecrop,opercrop = targangle[timestart:timeend],targoper[timestart:timeend]
+        ## Get indices after applying condition in the other fish: 
+        condinds = anglecrop.index[anglecrop.between(*condition)]
+        ## Collect relevant data points in target fish: 
+        vals = targoper.loc[condinds]
+        ## Calculate the proportion of the data below a cutoff value: 
+        prob = len(vals.index[vals>cutoff])/len(vals)
+        return prob
+
         #print('building histograms...')
         #self.hist_comp,_,_ = np.histogram2d(self.fish1_angle,self.fish2_angle,bins = np.arange(180),density = True)
         #self.hist_1,_,_ = np.histogram2d(self.fish1_angle,self.fish1_operangle,bins = np.arange(180),density = True)
