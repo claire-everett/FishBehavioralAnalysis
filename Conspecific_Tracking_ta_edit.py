@@ -312,6 +312,26 @@ def getfiltereddata(h5_files):
     
     return data_auto1_filt,data_auto2_filt
 
+
+def orientation(data_auto_arg):
+    '''
+    Function looks at orientation of the fish across a trial. It takes in teh dataframe and returns the 
+    orientation for each frame. A degree of East = 0, North = 90, West = 180, South = 270
+    '''
+    # First collect all parts of interest:
+    poi = ['zeroed']
+    origin = pd.DataFrame(0.,index = data_auto_arg[poi[0]]['x'].index, columns = ['x','y'])
+    distone = pd.Series(1, index = data_auto_arg[poi[0]]['x'].index)
+    plusx = origin['x'] + 1
+    plusy = origin['y']
+    HO = mydistance(coords(data_auto_arg[poi[0]]), coords(origin))
+    OP = distone
+    PH  = mydistance(coords(data_auto_arg[poi[0]]),(plusx, plusy))
+
+    
+    out = lawofcosines(HO, OP, PH)
+    return out
+
 ## Class to handle data manipulation for probabilistic metrics. 
 
 ## Analyze the joint distributions of angular metrics. 
@@ -484,25 +504,6 @@ if __name__ == "__main__":
 ##        
   
 
-    def orientation(data_auto_arg):
-        '''
-        Function looks at orientation of the fish across a trial. It takes in teh dataframe and returns the 
-        orientation for each frame. A degree of East = 0, North = 90, West = 180, South = 270
-        '''
-        # First collect all parts of interest:
-        poi = ['zeroed']
-        origin = pd.DataFrame(0.,index = data_auto_arg[poi[0]]['x'].index, columns = ['x','y'])
-        distone = pd.Series(1, index = data_auto_arg[poi[0]]['x'].index)
-        plusx = origin['x'] + 1
-        plusy = origin['y']
-        HO = mydistance(coords(data_auto_arg[poi[0]]), coords(origin))
-        OP = distone
-        PH  = mydistance(coords(data_auto_arg[poi[0]]),(plusx, plusy))
-    
-        
-        out = lawofcosines(HO, OP, PH)
-        return out
-
     data_auto1_filt['zeroed','x'] = data_auto1_filt['A_head']['x'] - midpoint(data_auto1_filt['B_rightoperculum']['x'], data_auto1_filt['B_rightoperculum']['y'], data_auto1_filt['E_leftoperculum']['x'], data_auto1_filt['E_leftoperculum']['y'])[0]
     data_auto1_filt['zeroed','y'] = data_auto1_filt['A_head']['y'] - midpoint(data_auto1_filt['B_rightoperculum']['x'], data_auto1_filt['B_rightoperculum']['y'], data_auto1_filt['E_leftoperculum']['x'], data_auto1_filt['E_leftoperculum']['y'])[1]
     
@@ -515,7 +516,9 @@ if __name__ == "__main__":
     
 
     fish1slope = (180 - fish1slope)
-    fish2slope = (180- fish2slope)
+    fish2slope = (180 - fish2slope)
+    
+    
     
 #    n = 92074
 #    list1 = [n- 10000, n, n + 10000, n + 20000, n + 30000, n + 40000, n + 50000, n + 60000, n + 70000]
@@ -533,6 +536,8 @@ if __name__ == "__main__":
     x2 = pd.Series(Operangle1[92074:164012], name="$X_2$")
     x3 = pd.Series(angle2[92074:164012], name="$X_1$")
     x4 = pd.Series(Operangle2[92074:164012], name="$X_2$")
+    
+
     
     # Set up the figure
 #    f, ax = plt.subplots(figsize=(8, 8))
@@ -560,7 +565,13 @@ if __name__ == "__main__":
     #gaze_ethoplot([angle1,angle2],'test',show = True, save = False)
     #print (binarize([angle1,angle2]))
     
+    
+    
+    
 #87525:154600
-
+#92074:164012
     
 
+    A = AngularAnalysis(angle1, angle2, Operangle1, Operangle2)
+    A.plot_2d_face("randomgarbage", 92074, 164012, kind = "hex")
+    A.plot_1d_att(randomgarbage, 0, )
