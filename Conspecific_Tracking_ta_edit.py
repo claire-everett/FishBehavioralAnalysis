@@ -440,7 +440,7 @@ class AngularAnalysis(object):
         sns.kdeplot(vals)
         if save == True: 
             plt.savefig(title+'.png')
-        plt.show()
+        #plt.show()
 
     ## 1d are conditional distributions: 
     def prob_1d_face(self,title,targetfish,condition = None,cutoff=180,timestart = None,timeend = None,save = False):
@@ -507,7 +507,7 @@ if __name__ == "__main__":
     # In[4]:
 
     home_dir = '.'#'/Users/Claire/Desktop/Test'
-    h5_files = glob(os.path.join(home_dir,'*.h5'))
+    h5_files = sorted(glob(os.path.join(home_dir,'*.h5')))
     print(h5_files)
 
     ## Packaged up some of the upload code. 
@@ -582,10 +582,10 @@ if __name__ == "__main__":
 #    
   
     
-    x1 = pd.Series(angle1[92074:164012], name="$X_1$")
-    x2 = pd.Series(Operangle1[92074:164012], name="$X_2$")
-    x3 = pd.Series(angle2[92074:164012], name="$X_1$")
-    x4 = pd.Series(Operangle2[92074:164012], name="$X_2$")
+#    x1 = pd.Series(angle1[92074:164012], name="$X_1$")
+#    x2 = pd.Series(Operangle1[92074:164012], name="$X_2$")
+#    x3 = pd.Series(angle2[92074:164012], name="$X_1$")
+#    x4 = pd.Series(Operangle2[92074:164012], name="$X_2$")
     
 
     
@@ -616,12 +616,40 @@ if __name__ == "__main__":
     #print (binarize([angle1,angle2]))
     
     
-    
+    A = AngularAnalysis(angle1, angle2, Operangle1, Operangle2)
     
 #87525:154600
 #92074:164012
+#     73544, 144038
+ 
+    n = 87525
+    list1 = [n- 10000, n, n + 10000, n + 20000, n + 30000, n + 40000, n + 50000, n + 60000, n + 70000]
+    counter = 0
+    for i in list1:
+#       B = A.plot_1d_att("313_319Fish1", 0,[140,180],list1[counter], list1[counter + 1], True)
+#       B = A.plot_1d_att("313_319Fish1", 0,[0,140],list1[counter], list1[counter + 1], True)
+#      
+#       
+       A.plot_2d_att("randomgarbage" + str(counter), 0, list1[counter], list1[counter + 1], kind = "kde", save = True)
+       counter = counter + 1
+#        g = sns.jointplot(x1, x2, kind="kde", height=7, space=0)
+#        plt.savefig('jointkdeplot' + str(counter) + '.pdf')
+#        counter = counter + 1
     
 
-    A = AngularAnalysis(angle1, angle2, Operangle1, Operangle2)
-    A.plot_2d_face("randomgarbage", 92074, 164012, kind = "hex")
-    A.plot_1d_att(randomgarbage, 0, )
+    
+   
+#    A.plot_2d_face("randomgarbage", 92074, 164012, kind = "hex")
+#    
+#    
+#    B = A.plot_1d_att("Mm3_Mm4Fish2", 0,[140,180],73544, 144038, True)
+#    B = A.plot_1d_att("Mm3_Mm4Fish2", 0,[0,140],73544, 144038, True)
+#    plt.show()
+#   
+    
+    
+    
+    
+    
+    
+    

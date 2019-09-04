@@ -1,0 +1,30 @@
+all_joints:
+- [0]
+- [1]
+- [2]
+- [3]
+- [4]
+all_joints_names: [A_head, B_rightoperculum, C_tailbase, D_tailtip, E_leftoperculum]
+dataset: ../../UnaugmentedDataSet_FinalStimTest2March6/FinalStimTest2_Claire95shuffle1.mat
+display_iters: 1000
+global_scale: 0.8
+init_weights: ../../FinalStimTestFeb25-trainset95shuffle1/train/snapshot-1030000
+intermediate_supervision: false
+intermediate_supervision_layer: 12
+location_refinement: true
+locref_huber_loss: true
+locref_loss_weight: 0.05
+locref_stdev: 7.2801
+max_input_size: 1000
+mirror: false
+multi_step:
+- [0.005, 10000]
+- [0.02, 430000]
+- [0.002, 730000]
+- [0.001, 1030000]
+net_type: resnet_50
+num_joints: 5
+pos_dist_thresh: 17
+save_iters: 50000
+scale_jitter_lo: 0.5
+scale_jitter_up: 1.5
