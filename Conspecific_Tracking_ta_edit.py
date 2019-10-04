@@ -359,19 +359,41 @@ class AngularAnalysis(object):
         save: (bool) whether or not to save the figure 
         '''
         plot = sns.jointplot(self.fish1_angle[timestart:timeend],self.fish2_angle[timestart:timeend],kind = kind)
+        
         if save == True: 
             plt.savefig(title+'.png')
         plt.show()
 
-    def plot_2d_face_jitter(self, title, timestart = None, timeend = None, shift = 40, kind = 'hex', save = False):
+    def plot_2d_face_shiftfish1(self, title, timestart = None, timeend = None, Shift = 40, kind = 'hex', save = False):
         
         ''' 
+        SHIFTS FISH1
         joint density of both fish heading direction with a designated delay time (40 frames for 1 sec in a 40 fps video)
         title: (string) the title of the figure. 
         timestart: (int) the time that we start counting the trace from. 
         timeend: (int) the time that we stop counting the trace.
         shift: number of frames to shift dataframe 1 down
         '''
+        plot = sns.jointplot(self.fish1_angle.shift(Shift)[timestart:timeend], self.fish2_angle[timestart:timeend], kind = kind)
+       
+        if save == True: 
+            plt.savefig(title+'.png')
+        
+    def plot_2d_face_shiftfish2(self, title, timestart = None, timeend = None, Shift = 40, kind = 'hex', save = False):
+        
+        ''' 
+        SHIFTS FISH1
+        joint density of both fish heading direction with a designated delay time (40 frames for 1 sec in a 40 fps video)
+        title: (string) the title of the figure. 
+        timestart: (int) the time that we start counting the trace from. 
+        timeend: (int) the time that we stop counting the trace.
+        shift: number of frames to shift dataframe 1 down
+        '''
+        plot = sns.jointplot(self.fish1[0], self.fish2[0].shift(Shift), kind = kind)
+
+        if save == True: 
+            plt.savefig(title+'.png')
+           
     def plot_2d_att(self,title,fishid,timestart = None,timeend = None,kind = 'hex',save = False):
         '''
         Joint density of one fish's heading direction + operculum open width
@@ -537,13 +559,96 @@ if __name__ == "__main__":
     Operangle2 = auto_scoring_get_opdeg(data_auto2_filt)
 
   
-#    Fish1aut = angle1.apply(lambda x: 1 if x > 140 else 0).values
-#    Fish1man = manual_scoring(data_manual1, data_auto1[88150:88910])
-#    Fish2aut = angle2.apply(lambda x: 1 if x > 140 else 0).values
-#    Fish2man = manual_scoring(data_manual2, data_auto2[88150:88910])
+
+    
+    A = AngularAnalysis(angle1, angle2, Operangle1, Operangle2)
+
+
+## making the original kdeplots/1D plots
+
+    
+#87525:154600
+#92074:164012
+#73544, 144038
+    
+    n = 87525
+    m = 154600
+    
+#    ## Makes the 1D kdeplots for all fish, overlap in same graph
+#    B = A.plot_1d_att("IF1_IF4Fish1", 1,[140,180],n, m, True)
+#    B = A.plot_1d_att("IF1_IF4Fish1", 1,[0,140],n, m, True)
+##    
+#    
+#    C = A.plot_1d_att("IF1_IF4Fish2", 0,[140,180],n, m, True)
+#    C = A.plot_1d_att("IF1_IF4Fish2", 0,[0,140],n, m, True)
+#    
+#    
+#    
+#    ## Makes 2D facing kdeplot and the att plots for each fish at 5 min intervals
+#    list1 = [n- 10000, n, n + 10000]
+#    counter = 0
+#    for i in list1:
+#       if counter < len(list1)-1:
+##           A.plot_2d_att("attFish1" + str(counter), 1, list1[counter], list1[counter + 1], kind = "kde", save = True)
+##          
+##           A.plot_2d_att("attFish2" + str(counter), 0, list1[counter], list1[counter + 1], kind = "kde", save = True)
+##           
+#           A.plot_2d_face("face" + str(counter), list1[counter], list1[counter + 1], kind = "kde", save = True)
+#           
+#           counter = counter + 1
+#    
+
+
+## jitter facing 2D - kdeplots
+    
+    ## Captures different amounts of facing jitter(shifts) within different windows of the trial
+    
+    counter = 0
+    shifter = 0
+    list1 = [n, n + 10000, n + 20000]
+    shifts1 = [0, 30]
+    for i in list1:
+        if counter < len(list1)-1:
+            for i in shifts1:
+                A.plot_2d_face_shiftfish1("Fish1shift" + str(list1[counter]) + "_" + str(shifts1[shifter]), list1[counter], list1[counter +1], shifts1[shifter], kind = "kde", save = True)
+                shifter = shifter + 1
+                
+            counter = counter + 1
+            shifter = shifter - len(shifts1)
+            
+## jitter operculum - kdeplots
+            
+## measuring probability of oper when facing
+            
+## measure probability of oper2 when oper1
+    
+###                 *** DONT NEED TO GO PAST THIS POINT****
+    
+    
+#    
+#    counter = 0
+#    shifter = 0
+#    list1 = [0, 70000, 90000]
+#    shifts1 = [0, 20]
+#    for i in list1:
+#        if counter < len(list1)-1:
+#            for i in shifts1:
+#                print(counter, shifter)
+#                shifter = shifter + 1
+#                
+#        counter = counter + 1
+#        shifter = shifter - len(shifts1)  
+#    
+    
+    
+    
+    
+    
+    
+###    plt.show()
+#   
+           
 #
- 
- 
 #    HeatmapCompare('angle1IM1_IM2', angle1, data_manual1, 88150, 88910)
 #    HeatmapCompare('angle2IM1_IM2', angle2, data_manual2, 88150, 88910)
 #    DualAngleHeatMapCompare('daulangleIM1_IM2', angle1, angle2, data_manual1, data_manual2, 88150, 88910)
@@ -559,15 +664,18 @@ if __name__ == "__main__":
 #        g = sns.jointplot(x1, x2, kind="kde", height=7, space=0)
 #        plt.savefig('jointkdeplot' + str(counter) + '.pdf')
 #        counter = counter + 1
+    
+    
+    
 ##        
   
 
-    data_auto1_filt['zeroed','x'] = data_auto1_filt['A_head']['x'] - midpoint(data_auto1_filt['B_rightoperculum']['x'], data_auto1_filt['B_rightoperculum']['y'], data_auto1_filt['E_leftoperculum']['x'], data_auto1_filt['E_leftoperculum']['y'])[0]
-    data_auto1_filt['zeroed','y'] = data_auto1_filt['A_head']['y'] - midpoint(data_auto1_filt['B_rightoperculum']['x'], data_auto1_filt['B_rightoperculum']['y'], data_auto1_filt['E_leftoperculum']['x'], data_auto1_filt['E_leftoperculum']['y'])[1]
-    
-    data_auto2_filt['zeroed','x'] = data_auto2_filt['A_head']['x'] - midpoint(data_auto2_filt['B_rightoperculum']['x'], data_auto2_filt['B_rightoperculum']['y'], data_auto2_filt['E_leftoperculum']['x'], data_auto2_filt['E_leftoperculum']['y'])[0]
-    data_auto2_filt['zeroed','y'] = data_auto2_filt['A_head']['y'] - midpoint(data_auto2_filt['B_rightoperculum']['x'], data_auto2_filt['B_rightoperculum']['y'], data_auto2_filt['E_leftoperculum']['x'], data_auto2_filt['E_leftoperculum']['y'])[1]
-    
+#    data_auto1_filt['zeroed','x'] = data_auto1_filt['A_head']['x'] - midpoint(data_auto1_filt['B_rightoperculum']['x'], data_auto1_filt['B_rightoperculum']['y'], data_auto1_filt['E_leftoperculum']['x'], data_auto1_filt['E_leftoperculum']['y'])[0]
+#    data_auto1_filt['zeroed','y'] = data_auto1_filt['A_head']['y'] - midpoint(data_auto1_filt['B_rightoperculum']['x'], data_auto1_filt['B_rightoperculum']['y'], data_auto1_filt['E_leftoperculum']['x'], data_auto1_filt['E_leftoperculum']['y'])[1]
+#    
+#    data_auto2_filt['zeroed','x'] = data_auto2_filt['A_head']['x'] - midpoint(data_auto2_filt['B_rightoperculum']['x'], data_auto2_filt['B_rightoperculum']['y'], data_auto2_filt['E_leftoperculum']['x'], data_auto2_filt['E_leftoperculum']['y'])[0]
+#    data_auto2_filt['zeroed','y'] = data_auto2_filt['A_head']['y'] - midpoint(data_auto2_filt['B_rightoperculum']['x'], data_auto2_filt['B_rightoperculum']['y'], data_auto2_filt['E_leftoperculum']['x'], data_auto2_filt['E_leftoperculum']['y'])[1]
+#    
     
  
     
@@ -618,41 +726,3 @@ if __name__ == "__main__":
     #gaze_ethoplot([angle1,angle2],'test',show = True, save = False)
     #print (binarize([angle1,angle2]))
     
-    
-    A = AngularAnalysis(angle1, angle2, Operangle1, Operangle2)
-    
-#87525:154600
-#92074:164012
-#73544, 144038
-    
-    n = 72720
-    m = 145551
-    
-    ## Makes the 1D kdeplots for all fish, overlap in same graph
-    B = A.plot_1d_att("IF1_IF4Fish1", 1,[140,180],n, m, True)
-    B = A.plot_1d_att("IF1_IF4Fish1", 1,[0,140],n, m, True)
-#    
-    
-    C = A.plot_1d_att("IF1_IF4Fish2", 0,[140,180],n, m, True)
-    C = A.plot_1d_att("IF1_IF4Fish2", 0,[0,140],n, m, True)
-    
-    
-    
-    ## Makes 2D facing kdeplot and the att plots for each fish at 5 min intervals
-    list1 = [n- 10000, n, n + 10000, n + 20000, n + 30000, n + 40000, n + 50000, n + 60000, n + 70000]
-    counter = 0
-    for i in list1:
-       if counter < len(list1):
-           A.plot_2d_att("attFish1" + str(counter), 1, list1[counter], list1[counter + 1], kind = "kde", save = True)
-          
-           A.plot_2d_att("attFish2" + str(counter), 0, list1[counter], list1[counter + 1], kind = "kde", save = True)
-           
-           A.plot_2d_face("face" + str(counter), list1[counter], list1[counter + 1], kind = "kde", save = True)
-           
-           counter = counter + 1
-#    
-  
-
-    
-###    plt.show()
-#   
