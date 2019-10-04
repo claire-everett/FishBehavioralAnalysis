@@ -169,7 +169,7 @@ def binarize(anglearrays):
     
     return (result)
 
-def auto_scoring_tracefilter(data,p0=20,p1=250,p2=15,p3=70,p4=200):
+def auto_scoring_tracefilter(data,p0=20,p2=15):
     mydata = data.copy()
     boi = ['A_head','B_rightoperculum', 'C_tailbase', 'D_tailtip','E_leftoperculum']
     for b in boi:
@@ -363,7 +363,15 @@ class AngularAnalysis(object):
             plt.savefig(title+'.png')
         plt.show()
 
+    def plot_2d_face_jitter(self, title, timestart = None, timeend = None, shift = 40, kind = 'hex', save = False):
         
+        ''' 
+        joint density of both fish heading direction with a designated delay time (40 frames for 1 sec in a 40 fps video)
+        title: (string) the title of the figure. 
+        timestart: (int) the time that we start counting the trace from. 
+        timeend: (int) the time that we stop counting the trace.
+        shift: number of frames to shift dataframe 1 down
+        '''
     def plot_2d_att(self,title,fishid,timestart = None,timeend = None,kind = 'hex',save = False):
         '''
         Joint density of one fish's heading direction + operculum open width
@@ -498,7 +506,7 @@ class AngularAnalysis(object):
         #self.hist_2,_,_ = np.histogram2d(self.fish2_angle,self.fish2_operangle,bins = np.arange(180),density = True)
         #print('histograms constructed.')
 
-
+    
 
 
 if __name__ == "__main__":
@@ -528,12 +536,6 @@ if __name__ == "__main__":
     Operangle1 = auto_scoring_get_opdeg(data_auto1_filt)
     Operangle2 = auto_scoring_get_opdeg(data_auto2_filt)
 
-    plt.plot(data_auto2_filt['A_head']['x'][:1000],data_auto2_filt['A_head']['y'][:1000])
-    plt.show()
-    #A = AngularAnalysis(angle1,angle2,Operangle1,Operangle2)
-    #B = A.plot_1d_att('test1',0,[140,180],87525,154600,True)
-    #B = A.plot_1d_att('test1',0,[0,140],87525,154600,True)
-
   
 #    Fish1aut = angle1.apply(lambda x: 1 if x > 140 else 0).values
 #    Fish1man = manual_scoring(data_manual1, data_auto1[88150:88910])
@@ -557,29 +559,6 @@ if __name__ == "__main__":
 #        g = sns.jointplot(x1, x2, kind="kde", height=7, space=0)
 #        plt.savefig('jointkdeplot' + str(counter) + '.pdf')
 #        counter = counter + 1
-<<<<<<< HEAD
-###        
-#  
-#
-#    def orientation(data_auto_arg):
-#        '''
-#        Function looks at orientation of the fish across a trial. It takes in teh dataframe and returns the 
-#        orientation for each frame. A degree of East = 0, North = 90, West = 180, South = 270
-#        '''
-#        # First collect all parts of interest:
-#        poi = ['zeroed']
-#        origin = pd.DataFrame(0.,index = data_auto_arg[poi[0]]['x'].index, columns = ['x','y'])
-#        distone = pd.Series(1, index = data_auto_arg[poi[0]]['x'].index)
-#        plusx = origin['x'] + 1
-#        plusy = origin['y']
-#        HO = mydistance(coords(data_auto_arg[poi[0]]), coords(origin))
-#        OP = distone
-#        PH  = mydistance(coords(data_auto_arg[poi[0]]),(plusx, plusy))
-#    
-#        
-#        out = lawofcosines(HO, OP, PH)
-#        return out
-=======
 ##        
   
 
@@ -590,12 +569,7 @@ if __name__ == "__main__":
     data_auto2_filt['zeroed','y'] = data_auto2_filt['A_head']['y'] - midpoint(data_auto2_filt['B_rightoperculum']['x'], data_auto2_filt['B_rightoperculum']['y'], data_auto2_filt['E_leftoperculum']['x'], data_auto2_filt['E_leftoperculum']['y'])[1]
     
     
-    fish1slope = orientation(data_auto1_filt)
-    fish2slope = orientation(data_auto2_filt)
-    
-
-    fish1slope = (180 - fish1slope)
-    fish2slope = (180 - fish2slope)
+ 
     
     
     
@@ -621,21 +595,17 @@ if __name__ == "__main__":
     # Set up the figure
 #    f, ax = plt.subplots(figsize=(8, 8))
 #    ax.set_aspect("equal")
->>>>>>> 6282d01d79661472dc2b56eb5e5d019ce3d0c0bb
 #
-#    data_auto1_filt['zeroed','x'] = data_auto1_filt['A_head']['x'] - midpoint(data_auto1_filt['B_rightoperculum']['x'], data_auto1_filt['B_rightoperculum']['y'], data_auto1_filt['E_leftoperculum']['x'], data_auto1_filt['E_leftoperculum']['y'])[0]
-#    data_auto1_filt['zeroed','y'] = data_auto1_filt['A_head']['y'] - midpoint(data_auto1_filt['B_rightoperculum']['x'], data_auto1_filt['B_rightoperculum']['y'], data_auto1_filt['E_leftoperculum']['x'], data_auto1_filt['E_leftoperculum']['y'])[1]
-#    
-#    data_auto2_filt['zeroed','x'] = data_auto2_filt['A_head']['x'] - midpoint(data_auto2_filt['B_rightoperculum']['x'], data_auto2_filt['B_rightoperculum']['y'], data_auto2_filt['E_leftoperculum']['x'], data_auto2_filt['E_leftoperculum']['y'])[0]
-#    data_auto2_filt['zeroed','y'] = data_auto2_filt['A_head']['y'] - midpoint(data_auto2_filt['B_rightoperculum']['x'], data_auto2_filt['B_rightoperculum']['y'], data_auto2_filt['E_leftoperculum']['x'], data_auto2_filt['E_leftoperculum']['y'])[1]
-#    
-#    
-#    fish1slope = orientation(data_auto1_filt)
-#    fish2slope = orientation(data_auto2_filt)
-#    
+## Draw the two density plots
+#    ax = sns.kdeplot(x1, x2,
+#                 cmap="Reds", shade=True, shade_lowest=False)
+#    ax = sns.kdeplot(x3, x4,
+#                 cmap="Blues", shade=True, shade_lowest=False)
 #
-#    fish1slope = (180 - fish1slope)
-#    fish2slope = (180- fish2slope)
+#    red = sns.color_palette("Reds")[-2]
+#    blue = sns.color_palette("Blues")[-2]
+#    ax.text(2.5, 8.2, "Orientation", size=16, color=blue)
+#    ax.text(3.8, 4.5, "Operculum", size=16, color=red)
 #    
 #    if i in angle1 > 180:
 #        print "jey"
@@ -653,36 +623,36 @@ if __name__ == "__main__":
     
 #87525:154600
 #92074:164012
-#     73544, 144038
- 
-    n = 87525
+#73544, 144038
+    
+    n = 72720
+    m = 145551
+    
+    ## Makes the 1D kdeplots for all fish, overlap in same graph
+    B = A.plot_1d_att("IF1_IF4Fish1", 1,[140,180],n, m, True)
+    B = A.plot_1d_att("IF1_IF4Fish1", 1,[0,140],n, m, True)
+#    
+    
+    C = A.plot_1d_att("IF1_IF4Fish2", 0,[140,180],n, m, True)
+    C = A.plot_1d_att("IF1_IF4Fish2", 0,[0,140],n, m, True)
+    
+    
+    
+    ## Makes 2D facing kdeplot and the att plots for each fish at 5 min intervals
     list1 = [n- 10000, n, n + 10000, n + 20000, n + 30000, n + 40000, n + 50000, n + 60000, n + 70000]
     counter = 0
     for i in list1:
-#       B = A.plot_1d_att("313_319Fish1", 0,[140,180],list1[counter], list1[counter + 1], True)
-#       B = A.plot_1d_att("313_319Fish1", 0,[0,140],list1[counter], list1[counter + 1], True)
-#      
-#       
-       A.plot_2d_att("randomgarbage" + str(counter), 0, list1[counter], list1[counter + 1], kind = "kde", save = True)
-       counter = counter + 1
-#        g = sns.jointplot(x1, x2, kind="kde", height=7, space=0)
-#        plt.savefig('jointkdeplot' + str(counter) + '.pdf')
-#        counter = counter + 1
-    
+       if counter < len(list1):
+           A.plot_2d_att("attFish1" + str(counter), 1, list1[counter], list1[counter + 1], kind = "kde", save = True)
+          
+           A.plot_2d_att("attFish2" + str(counter), 0, list1[counter], list1[counter + 1], kind = "kde", save = True)
+           
+           A.plot_2d_face("face" + str(counter), list1[counter], list1[counter + 1], kind = "kde", save = True)
+           
+           counter = counter + 1
+#    
+  
 
     
-   
-#    A.plot_2d_face("randomgarbage", 92074, 164012, kind = "hex")
-#    
-#    
-#    B = A.plot_1d_att("Mm3_Mm4Fish2", 0,[140,180],73544, 144038, True)
-#    B = A.plot_1d_att("Mm3_Mm4Fish2", 0,[0,140],73544, 144038, True)
-#    plt.show()
+###    plt.show()
 #   
-    
-    
-    
-    
-    
-    
-    
