@@ -203,6 +203,26 @@ def manual_scoring(data_manual,data_auto,crop0 = 0,crop1= -1):
           
     return Manual['OpOpen'][crop0:crop1]
 
+def auto_scoring_TS1(data_auto,thresh_param0 = 65.45,thresh_param1 = 135.56):
+    '''
+    Function to automatically score operculum as open or closed based on threshold parameters. 
+    
+    Parameters: 
+    data_auto: traces of behavior collected as a pandas array. 
+    thresh_param0: lower threshold for operculum angle
+    thresh_param1: upper threshold for operculum angle
+    
+    Returns:
+    pandas array: binary array of open/closed scoring
+    '''
+    degree = auto_scoring_get_opdeg(data_auto)
+ 
+    return degree.apply(lambda x: 1 if thresh_param0 < x < thresh_param1 else 0)
+
+def Percent_Trial(func, data_auto):
+    BinaryVector = func(data_auto)
+    OpOpen = (BinaryVector.sum())/len(BinaryVector)
+    return OpOpen
 
 ####################################
 
@@ -543,14 +563,14 @@ if __name__ == "__main__":
     ## Packaged up some of the upload code. 
     data_auto1_filt,data_auto2_filt = getfiltereddata(h5_files)
 
-    excel_files = glob(os.path.join(home_dir, '*.xlsx'))
-    
+#    excel_files = glob(os.path.join(home_dir, '*.xlsx'))
+#    
     ## Groundtruth data
-    file_handle3 = excel_files[0]
-    data_manual1 = pd.read_excel(file_handle3)
-   
-    file_handle4 = excel_files[1]
-    data_manual2 = pd.read_excel(file_handle4)
+#    file_handle3 = excel_files[0]
+#    data_manual1 = pd.read_excel(file_handle3)
+#   
+#    file_handle4 = excel_files[1]
+#    data_manual2 = pd.read_excel(file_handle4)
     
     ## Take the filtered tracked points, and return orientation, opercula angles. 
     angle1 = gaze_tracking(data_auto1_filt,data_auto2_filt)
@@ -558,7 +578,13 @@ if __name__ == "__main__":
     Operangle1 = auto_scoring_get_opdeg(data_auto1_filt)
     Operangle2 = auto_scoring_get_opdeg(data_auto2_filt)
 
-  
+    n = 12754
+    m = 73645
+    
+    RateFish1 = Percent_Trial(auto_scoring_TS1, data_auto1_filt[n:m])
+    RateFish2 = Percent_Trial(auto_scoring_TS1, data_auto2_filt[n:m]) 
+    print(RateFish1, RateFish2)
+    
 
     
     A = AngularAnalysis(angle1, angle2, Operangle1, Operangle2)
@@ -571,31 +597,38 @@ if __name__ == "__main__":
 #92074:164012
 #73544, 144038
     
-    n = 87525
-    m = 154600
     
-#    ## Makes the 1D kdeplots for all fish, overlap in same graph
+    
+    ## Makes the 1D kdeplots for all fish, overlap in same graph
 #    B = A.plot_1d_att("IF1_IF4Fish1", 1,[140,180],n, m, True)
 #    B = A.plot_1d_att("IF1_IF4Fish1", 1,[0,140],n, m, True)
 ##    
 #    
 #    C = A.plot_1d_att("IF1_IF4Fish2", 0,[140,180],n, m, True)
 #    C = A.plot_1d_att("IF1_IF4Fish2", 0,[0,140],n, m, True)
-#    
-#    
+ 
+    
 #    
 #    ## Makes 2D facing kdeplot and the att plots for each fish at 5 min intervals
-#    list1 = [n- 10000, n, n + 10000]
-#    counter = 0
-#    for i in list1:
-#       if counter < len(list1)-1:
-##           A.plot_2d_att("attFish1" + str(counter), 1, list1[counter], list1[counter + 1], kind = "kde", save = True)
-##          
-##           A.plot_2d_att("attFish2" + str(counter), 0, list1[counter], list1[counter + 1], kind = "kde", save = True)
-##           
-#           A.plot_2d_face("face" + str(counter), list1[counter], list1[counter + 1], kind = "kde", save = True)
-#           
-#           counter = counter + 1
+    list1 = [n, n + 10000, n + 20000, n + 30000, n + 40000]
+    counter = 0
+    for i in list1:
+       if counter < len(list1)-1:
+           A.plot_2d_att("attFish1" + str(counter), 0, list1[counter], list1[counter + 1], kind = "kde", save = True)
+          
+           A.plot_2d_att("attFish2" + str(counter), 1, list1[counter], list1[counter + 1], kind = "kde", save = True)
+           
+           A.plot_2d_face("face" + str(counter), list1[counter], list1[counter + 1], kind = "kde", save = True)
+           
+           counter = counter + 1
+
+    
+
+# Calculating the Op opening Rate
+
+
+
+
 #    
 
 
@@ -603,19 +636,24 @@ if __name__ == "__main__":
     
     ## Captures different amounts of facing jitter(shifts) within different windows of the trial
     
-    counter = 0
-    shifter = 0
-    list1 = [n, n + 10000, n + 20000]
-    shifts1 = [0, 30]
-    for i in list1:
-        if counter < len(list1)-1:
-            for i in shifts1:
-                A.plot_2d_face_shiftfish1("Fish1shift" + str(list1[counter]) + "_" + str(shifts1[shifter]), list1[counter], list1[counter +1], shifts1[shifter], kind = "kde", save = True)
-                shifter = shifter + 1
-                
-            counter = counter + 1
-            shifter = shifter - len(shifts1)
-            
+#    counter = 0
+#    shifter = 0
+#    list1 = [n, n + 10000, n + 20000]
+#    shifts1 = [0, 30]
+#    for i in list1:
+#        if counter < len(list1)-1:
+#            for i in shifts1:
+#                A.plot_2d_face_shiftfish1("Fish1shift" + str(list1[counter]) + "_" + str(shifts1[shifter]), list1[counter], list1[counter +1], shifts1[shifter], kind = "kde", save = True)
+#                
+#                A.plot_2d_face_shiftfish1("Fish2shift" + str(list1[counter]) + "_" + str(shifts1[shifter]), list1[counter], list1[counter +1], shifts1[shifter], kind = "kde", save = True)
+#                
+#                shifter = shifter + 1
+#                
+#            counter = counter + 1
+#            shifter = shifter - len(shifts1)
+#    
+
+         
 ## jitter operculum - kdeplots
             
 ## measuring probability of oper when facing
