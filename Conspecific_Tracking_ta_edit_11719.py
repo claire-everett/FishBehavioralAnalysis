@@ -413,6 +413,21 @@ class AngularAnalysis(object):
 
         if save == True: 
             plt.savefig(title+'.png')
+
+    def plot_2d_oper(self,title,timestart = None,timeend = None,kind = 'hex',save = False):
+        '''
+        Joint density of both fish heading direction. 
+        title: (string) the title of the figure. 
+        timestart: (int) the time that we start counting the trace from. 
+        timeend: (int) the time that we stop counting the trace. 
+        kind: (string) the kind argument passed to seaborn jointplot. 
+        save: (bool) whether or not to save the figure 
+        '''
+        plot = sns.jointplot(self.fish1_operangle[timestart:timeend],self.fish2_operangle[timestart:timeend],kind = kind)
+        
+        if save == True: 
+            plt.savefig(title+'.png')
+        plt.show()
            
     def plot_2d_att(self,title,fishid,timestart = None,timeend = None,kind = 'hex',save = False):
         '''
@@ -618,7 +633,9 @@ if __name__ == "__main__":
           
            A.plot_2d_att("attFish2" + str(counter), 1, list1[counter], list1[counter + 1], kind = "kde", save = True)
            
-           A.plot_2d_face("face" + str(counter), list1[counter], list1[counter + 1], kind = "kde", save = True)
+           ## Entirety of code change
+           #A.plot_2d_face("face" + str(counter), list1[counter], list1[counter + 1], kind = "kde", save = True)
+           A.plot_2d_oper("oper" + str(counter), list1[counter], list1[counter + 1], kind = "kde", save = True)
            
            counter = counter + 1
 
