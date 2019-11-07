@@ -633,7 +633,9 @@ if __name__ == "__main__":
           
            A.plot_2d_att("attFish2" + str(counter), 1, list1[counter], list1[counter + 1], kind = "kde", save = True)
            
-           A.plot_2d_face("face" + str(counter), list1[counter], list1[counter + 1], kind = "kde", save = True)
+           ## NOTE: This has is the entirety of code change. 
+           #A.plot_2d_face("face" + str(counter), list1[counter], list1[counter + 1], kind = "kde", save = True)
+           A.plot_2d_oper("oper" + str(counter), list1[counter], list1[counter + 1], kind = "kde", save = True)
            
            counter = counter + 1
 
